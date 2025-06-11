@@ -1,0 +1,427 @@
+<div class="drawer__overlay"></div>
+{%- render 'section-spacing-collapsing' -%} 
+
+{%- assign text_position = section.settings.text_position -%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-stack-intro: {% if text_position == 'center' %}66.6667%{% else %}50%{% endif %};
+    --section-stack-main: 50%;
+    --PT: {{ section.settings.padding_top }}px;
+    --PB: {{ section.settings.padding_bottom }}px;
+    --pb-bg: {{ section.settings.background }};
+    --pb-brand: {{ section.settings.heading_color }};
+    --pb-title: {{ section.settings.text_color }};
+    --pb-button-text: {{ section.settings.button_text_color }};
+    --pb-button-bg: {{ section.settings.button_background }};
+    --pb-text: {{ section.settings.text_color }};
+  }
+</style>
+
+{% liquid
+  assign current_variant = product.selected_or_first_available_variant
+  assign cart_update_link = ''
+  if cart
+    assign cart_update_link = routes.cart_update_url
+    assign cart_update_link_para = ''
+    for item in cart.items
+      assign append_para = 'updates[' | append: item.id | append: ':' | append: item.key | append: ']' | append: '=0'
+      assign cart_update_link_para = cart_update_link_para | append: append_para
+      unless forloop.last
+        assign cart_update_link_para = cart_update_link_para | append: '&'
+      endunless
+    endfor
+    assign cart_update_link = cart_update_link | append: '?' | append: cart_update_link_para
+  endif
+  assign show_secondary_image = section.settings.show_secondary_image
+%}
+
+<link href="https://cdn.jsdelivr.net/npm/swiper@11.2.8/swiper-bundle.min.css" rel="stylesheet">
+
+{{ 'bundle-builder.css' | asset_url | stylesheet_tag }}
+
+<pack-builder>
+  <section
+    class="pb"
+    data-product-id="{{ product.id }}"
+    data-product-handle="{{ product.handle }}"
+    data-product-title="{{ product.title }}"
+    data-variant-id="{{ current_variant.id }}"
+    data-cart-product="true"
+    data-bundle-remove="{{ cart_update_link }}"
+  >
+    <div class="">
+      <div class="pb__edit-wrapper hidden" style="display: none;">
+        <div class="pb__edit">
+          <h2 class="pb__edit-title">Editing Subscription</h2>
+          <div class="pb__edit-text"></div>
+          <div class="pb__edit-info"></div>
+        </div>
+        <p>Looking for the normal pack builder? <a href="{{ product.url }}" class="">Click here</a></p>
+      </div>
+      <style>
+        .pb__edit {
+            padding: 24px;
+            background: #fff;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .pb__edit-info {
+            display: grid;
+            gap: 10px;
+        }
+
+        .pb__edit-info-block {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .pb__edit-info-block-item span {
+            display: block;
+        }
+
+        .pb__edit-info-block-item-value {
+            font-size: 14px;
+        }
+
+        .pb__edit-info-block-item-label {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+      </style>
+      <div class="pb__main">
+        <div class="pb__main-header">
+          <h2 class="pb__main-title">{{ section.settings.title }}</h2>
+          <h3 class="pb__edit-subtitle hidden">
+            Editing Subscription
+            <span class="pb__subscription-id"></span>
+          </h3>
+
+          <div class="pb-summary__edit-group">
+            <div class="pb-summary__edit pack-size-edit">
+              <label class="pb-summary__edit-title" for="pack-size-select">Pack Size:</label>
+              <select id="pack-size-select" class="pb-summary__edit-select pack-size-select" name="packSize">
+                <option id="pack-size-10" value="10" selected>10-pack</option>
+              </select>
+            </div>
+            {% if product.selling_plan_groups.size > 0 %}
+              <div class="pb-summary__edit pack-frequency-edit">
+                <label class="pb-summary__edit-title" for="pack-freq-select">Delivered:</label>
+                <select id="pack-freq-select" class="pb-summary__edit-select pack-freq-select" name="packFreq">
+                  
+                </select>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="pb__content">
+          <div class="pb__controls">
+            <div class="pb__controls-content">
+              <div class="pb__controls-filters">
+                <button class="pb__controls-button filters-toggle" data-target="filters">
+                  {% render 'icon-pb-filter' %}
+                </button>
+                <ul class="pb__jump-links">
+                  {% for block in section.blocks %}
+                    {% if block.type == 'collection' %}
+                      {% assign category = block.settings.collection %}
+                      <li>
+                        <a
+                          type="button"
+                          href="#category-{{ category.handle }}"
+                          id="jump-link-gardencups"
+                          class="pb__jump-link"
+                          data-target="{{ category.handle }}"
+                        >
+                          {{ category.title }}
+                        </a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="pb__collections">
+            {% render 'pb-skeleton' %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pb__drawer filters-drawer">
+      <div class="pb__drawer-inner">
+        <div class="pb__drawer-content">
+          <div class="pb__filters-options">
+            <div class="pb__drawer-head">
+              <h3 class="pb__drawer-title">Filter</h3>
+              <button class="pb__drawer-close" data-target="filters">
+                <span class="sr-only">Close</span>
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <g id="CLOSE ">
+                  <path id="Vector 4" d="M35.7071 20.7071C36.0976 20.3166 36.0976 19.6834 35.7071 19.2929L29.3431 12.9289C28.9526 12.5384 28.3195 12.5384 27.9289 12.9289C27.5384 13.3195 27.5384 13.9526 27.9289 14.3431L33.5858 20L27.9289 25.6569C27.5384 26.0474 27.5384 26.6805 27.9289 27.0711C28.3195 27.4616 28.9526 27.4616 29.3431 27.0711L35.7071 20.7071ZM4 21H35V19H4V21Z" fill="#183A00"></path>
+                  </g>
+                </svg>
+              </button>
+            </div>
+            <div class="pb__filter category">
+              <div class="pb__filter-head">
+                <h4 class="pb__filter-title">Category</h4>
+              </div>
+              <ul class="pb__filter-list">
+                {% for block in section.blocks %}
+                  {% if block.type == 'collection' %}
+                    {% assign category = block.settings.collection %}
+                    <li>
+                      <label for="category-filter-{{ category.handle }}">
+                        {{ category.title }}
+                        <input
+                          class="pb__filter-input"
+                          type="checkbox"
+                          id="category-filter-{{ category.handle }}"
+                          name="category-filter-{{ category.handle }}"
+                          data-value="{{ category.handle }}"
+                          data-type="category"
+                        >
+                        <span class="pb__filter-checkbox"></span>
+                      </label>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+
+            <div class="pb__filter diet">
+              <h4 class="pb__filter-title">Dietary Preferences</h4>
+              <ul class="pb__filter-list">
+                {% for block in section.blocks %}
+                  {% if block.type == 'tags' %}
+                    {% assign tags = block.settings.tags | split: ',' %}
+                    {% for tag in tags %}
+                      <li>
+                        <label for="diet-filter-{{ tag | handleize }}">
+                          {{ tag }}
+                          <input
+                            class="pb__filter-input"
+                            type="checkbox"
+                            id="diet-filter-{{ tag | handleize }}"
+                            name="diet-filter-{{ tag | handleize }}"
+                            data-value="{{ tag | handleize }}"
+                            data-type="diet"
+                          >
+                          <span class="pb__filter-checkbox"></span>
+                        </label>
+                      </li>
+                    {% endfor %}
+                    {% break %}
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+
+          <div class="pb__filters-footer">
+            <button class="pb__filters-apply">Apply filters (<span class="pb__filters-count">0</span>)</button>
+            <button class="pb__filters-clear">Clear All</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pb-summary__container">
+      {% render 'pb-summary-content', section: section %}
+    </div>
+    <div class="quickview-modal__wrap quickview is-hidden" aria-hidden="true">
+      <div class="quickview-modal__overlay"></div>
+      <div class="quickview-modal">
+        <button class="quickview-modal__close" aria-label="Close modal" role="button">
+          <div class="quickview-modal__close-hr"></div>
+          <span class="sr-only"></span>
+          <div class="quickview-modal__close-icon">
+            <svg aria-hidden="true" focusable="false" role="presentation" class="icon icon-close" viewBox="0 0 192 192">
+              <path d="M150 42L42 150M150 150L42 42" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+        </button>
+        <div class="quickview-modal__content">
+          <div class="quickview-modal__left">
+            <div class="quickview-modal__images">
+              <span class="quickview-modal__product-badge">Premium Item</span>
+              <div class="swiper">
+                <div class="quickview-modal__images-wrapper swiper-wrapper">
+                  <div class="swiper-slide"></div>
+                  <div class="swiper-slide"></div>
+                  <div class="swiper-slide"></div>
+                </div>
+                <div class="quickview-modal__pagination swiper-pagination"></div>
+                <div class="quickview-modal__button-prev swiper-button-prev"></div>
+                <div class="quickview-modal__button-next swiper-button-next"></div>
+              </div>
+            </div>
+            <div class="quickview-modal__properties quickview-modal__properties-desktop"></div>
+          </div>
+          <div class="quickview-modal__right">
+            <div class="quickview-modal__details">
+              <div class="quickview-modal__header">
+                <h3 class="quickview-modal__title"></h3>
+                <div class="quickview-modal__controls"></div>
+                <div class="quickview-modal__properties quickview-modal__properties-mobile"></div>
+              </div>
+              <div class="quickview-modal__icons"></div>
+              <div class="quickview-modal__tabs">
+                <div class="quickview-modal__tabs-header-container">
+                  <div class="quickview-modal__tabs-header">
+                    <button class="quickview-modal__tab-button is-active" data-tab="details">Details</button>
+                    <button class="quickview-modal__tab-button" data-tab="inside">What's Inside</button>
+                    <button class="quickview-modal__tab-button" data-tab="nutrition">Nutrition</button>
+                  </div>
+                </div>
+                <div class="quickview-modal__tabs-content"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% render 'sms-delivery' %}
+  </section>
+</pack-builder>
+
+<script>
+  var shopLanuage = '{{ request.locale.iso_code | upcase }}';
+</script>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11.2.8/swiper-bundle.min.js"></script>
+<script src="{{ 'bundle-builder.js' | asset_url}}" ></script>
+{% schema %}
+{
+  "name": "Bundle Builder",
+  "blocks": [
+    {
+      "type": "collection",
+      "name": "Collection",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding Top",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding Bottom",
+      "default": 36
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "Heading"
+    },
+    {
+      "type": "richtext",
+      "id": "content",
+      "label": "Content",
+      "default": "<p>Use this text to share information about your brand with your customers. Describe a product, share announcements, or welcome customers to your store.</p>"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text"
+    },
+    {
+      "type": "url",
+      "id": "button_url",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "text_position",
+      "label": "Text position",
+      "options": [
+        {
+          "value": "start",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "end",
+          "label": "Right"
+        }
+      ],
+      "default": "start"
+    },
+    {
+      "type": "header",
+      "content": "Colors",
+      "info": "Gradient replaces solid colors when set."
+    },
+    {
+      "type": "color",
+      "id": "background",
+      "label": "Background"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading color"
+    },
+    {
+      "type": "color",
+      "id": "button_background",
+      "label": "Button background"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button text"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_secondary_image",
+      "label": "Show Secondary Image",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Bundle Builder"
+    }
+  ]
+}
+{% endschema %}
